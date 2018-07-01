@@ -109,4 +109,4 @@ class GPS_class():
   # closing threads 
   def close(self):
     self.gpsp.running = False
-    self.gpsp.join()               # wait for the thread to finish what it's doing
+    #self.gpsp.join()               # wait for the thread to finish what it's doing

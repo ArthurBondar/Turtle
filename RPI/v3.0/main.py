@@ -110,7 +110,7 @@ while REC_DUR > 0 or poll == None:
         io.setRun()
         # substract interval from recording time
         REC_DUR -= VIDEO_SECTION
-        log.write("time left: "+str(DUR)+" min")
+        log.write("time left: "+str(REC_DUR)+" min")
         # assemble filename
         NEW_FILE = TEMP_FOLDER + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + ".h264"
         PARAM[4] = NEW_FILE             # parameter 4 is filename
@@ -118,7 +118,7 @@ while REC_DUR > 0 or poll == None:
         camera = subprocess.Popen(PARAM,stdout = subprocess.PIPE,stderr = subprocess.STDOUT)
         log.write("camera pid: "+str(camera.pid))
         # move old file to USB
-        log.write("moving file to usb ...")
+        log.write("moving file: "+OLD_FILE+" to usb ...")
         move(OLD_FILE, USB_FOLDER)
         log.write("file moved")
         # updating prev file
@@ -127,7 +127,6 @@ while REC_DUR > 0 or poll == None:
 
     # Checking termination semaphore
     TERM = io.checkSwitch()
-    TERM = False
     if TERM == True:
         # closing current camera program
         log.write("killing current camera process: "+str(camera.pid))
@@ -136,17 +135,18 @@ while REC_DUR > 0 or poll == None:
 
     io.setRec()
     log.write(gps.writeCSV())
-    sleep(1)
+    gps.dumpData()
+    sleep(5)
     poll = camera.poll()
 # -----------------------------------------------
 
 # moving the last file to USB
-log.write("moving file to usb ...")
+log.write("moving file: "+OLD_FILE+" to usb ...")
 move(OLD_FILE, USB_FOLDER)
 log.write("file moved")
 
 if TERM == True:
-    log.write("code terminated using semaphore")
+    log.write("code terminated using Switch")
 else:
     # Setting Sleep time for Arduino
     s_hr, s_min = setup_file.getParam("sleep") 
@@ -158,4 +158,5 @@ else:
 
 io.blink(10)         # indicate code termination
 io.clear()          # turn off both LED's
-quit()
+log.write("FINISHED\n")
+sys.exit()

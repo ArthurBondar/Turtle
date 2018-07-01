@@ -15,8 +15,8 @@
 
 #include <Wire.h>         // I2C protocol library
 
-#define VALVE       7     // Release MOSFET control (HIGH-ON, LOW-OFF)
-#define BATTERY     A1    // Battery Monitor pin
+#define VALVE       12     // Release MOSFET control (HIGH-ON, LOW-OFF)
+#define BATTERY     A3    // Battery Monitor pin
 #define WAKEPIN     12    // Pi Power MOSFET control (LOW-ON, HIGH-OFF)
 #define ALIVE       11    // Checking Pi Status
 #define SLEEP_LED   10    // Sleep mode indicator

@@ -57,3 +57,7 @@ sleep(2)
 # Setting Sleep time for Arduino
 s_hr, s_min = setup_file.getParam("sleep") 
 print("recording finished, sleep for "+str(s_hr)+"hr "+str(s_min)+"min")
+if timer.setSleep(s_hr, s_min):
+    print("sleep set succesfully")
+else:
+    print("sleep failed")

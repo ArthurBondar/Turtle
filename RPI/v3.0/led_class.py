@@ -48,9 +48,9 @@ class Gpio_class():
     def blink(self, times):
         for i in range (0, times):
             GPIO.output(self.RUN_LED, GPIO.LOW)
-            sleep(0.5)
+            sleep(0.2)
             GPIO.output(self.RUN_LED, GPIO.HIGH)
-            sleep(0.5)
+            sleep(0.2)
     
     # check if switch pin is pulled low
     def checkSwitch(self):
