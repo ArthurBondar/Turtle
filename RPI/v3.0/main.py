@@ -40,7 +40,7 @@ PARAM = [
 ]
 
 # move video file from Pi SD to USB
-# uses cp and rm since mv cannot preserve permitions
+# uses cp and rm since mv cannot preserve permissions
 def move(old_path, new_path):
     os.system("sudo cp "+OLD_FILE+" "+USB_FOLDER)
     os.system("sudo rm "+OLD_FILE)
@@ -158,5 +158,7 @@ else:
 
 io.blink(10)         # indicate code termination
 io.clear()          # turn off both LED's
+i
 log.write("FINISHED\n")
+print
 sys.exit()
