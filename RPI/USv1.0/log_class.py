@@ -1,10 +1,12 @@
 #!/usr/bin/python2
 
-#
-# Class to log data in a log file
-# Every message is timestamped and
-# Opens and closes the file on every log
-# 
+'''
+
+    Class to log data in a log file
+    Every message is timestamped and
+    Opens and closes the file on every log
+
+'''
 
 import datetime                 # lib for system datetime
 

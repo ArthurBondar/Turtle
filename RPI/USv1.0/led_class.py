@@ -1,13 +1,22 @@
 #!/usr/bin/python2
 
-#
-# Class to interract with status LED's and Alive pin
-# 
+'''
+
+    July 30, 2018
+
+    Class to use GPIO's of the Rapsberri Pi
+    primary use is to display status LED's 
+    and enable 'Alive' pin to let arduino know Pi is up
+
+'''
 
 import RPi.GPIO as GPIO
 from time import sleep
 
 class Gpio_class():
+
+    # default parameters
+    # overwritten by parsed data from setup file
     REC_LED = 27
     RUN_LED = 22
     ALIVE = 17

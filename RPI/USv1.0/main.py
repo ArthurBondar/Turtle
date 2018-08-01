@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 
 '''
+
     July 30, 2018
     US version 1.0
     Arthur Bondar
@@ -15,7 +16,14 @@
     - Declare default video recording parameters
     - Parse setupfile and overwrite video parameters
     - Get sleep time cycle from setup file
-    - 
+    LOOP:
+    - Start video section
+    - Move old section to USB file
+    - Record mission data to log file
+    END LOOP:
+    - Move remaining secion
+    - Send sleep time to Arduino for wakeup signal
+    - Shutdown - start Halt state
 
 '''
 
