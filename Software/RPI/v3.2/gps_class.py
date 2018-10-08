@@ -64,7 +64,7 @@ class GPS_class():
     if not os.path.isfile(self.fname):
       with open(self.fname, "wb") as fdata:
         writer = csv.writer(fdata, delimiter=',', quotechar='"', quoting=csv.QUOTE_NONE)
-        writer.writerow(('mode','time','speed','longitude','latitude','climb', 'altitude','track'))
+        writer.writerow(('Fix mode','Time','Speed','Longitude','Latitude','Climb', 'Altitude','Track'))
 
   # function to write one row of data into CSV, only when fix is detected
   def writeCSV(self):
@@ -109,24 +109,24 @@ class GPS_class():
     print("Stopping")
     gpsp.join()               # wait for the thread to finish what it's doing
 
+
 # When class module is started by itself
 # Following code is used for testing the LED's
 if __name__ == "__main__":
 
-  USB_FOLDER = "/home/pi/"
+  OUT_FILE = "/home/pi/"
 
   try:
     print("Starting GPS debugging session")
-    gps = GPS_class(USB_FOLDER)
+    gps = GPS_class(OUT_FILE)
     gps.setTime()
     # print data in 10 rows
     for i in range(0, 10):
-      gps.dumpData()
-      gps.writeCSV()
+      print gps.writeCSV()
       time.sleep(1)
     # close GPS
     gps.close()
     print("Finished debugging session")
-    print("Output file in /home/pi/")
+    print("Output file is: "+gps.fname)
 
   except: pass

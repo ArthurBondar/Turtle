@@ -43,7 +43,7 @@ class LogClass():
         string = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " | CPU load="
         string += str(os.popen("top -n1 | awk '/Cpu\(s\):/ {print $2}'").readline())
         with open(self.PATH, "a") as _file:
-            _file.write(string)
+            _file.write(string + '\n')
   
 
 # When class module is started by itself

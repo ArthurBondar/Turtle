@@ -43,10 +43,11 @@ USB_FOLDER =        "/home/pi/USB/"
 SETUP_FILE =        USB_FOLDER + "setup.txt"
 LOG_FILE =          USB_FOLDER + "log.txt"
 # Global Variables
-TERM = False
-camera = None
-poll = 1
-REC_FILE = ""
+TERM = False                        # switch termination flag
+camera = None                       # camera object
+poll = 1                            # check for camera thread execution
+REC_FILE = ""                       # video section file name variable
+gps_interval = 20                   # interval for gps logging in SEC
 
 # Camera default paramters
 # array of parameters is passed to raspivid program as cmd args
@@ -88,17 +89,6 @@ def start_section():
     print("*** section started *** camera pid: "+str(camera.pid))
     return camera.poll()
 
-'''
-# Remounting USB in ~/USB directory
-# removing unnecessary existing files
-os.system("sudo umount /dev/sda1")
-sleep(2)
-os.system("sudo rm "+TEMP_FOLDER+"*")   # Removing temp files
-os.system("sudo rm "+USB_FOLDER+"*")    # Removing old usb files
-os.system("sudo mount /dev/sda1 "+USB_FOLDER) # mounting USB
-sleep(2)
-'''
-
 # Creating instance of objects
 # classes used for: parsing setup file, GPIO controll and I2C commands
 log = LogClass(LOG_FILE)                # Log file object
@@ -121,46 +111,46 @@ if flag[1] == 0:
     # parsing release time from file
     time = []*2
     time = setup_file.getParam("release")
-    log.write("setting release time for: "+str(time[0])+"hr "+str(time[1])+"min")
+    log.write("setting release time: "+str(time[0])+"hr "+str(time[1])+"min")
     try:
         if not time == 0: 
             resp = timer.setRelease(time[0], time[1])
-            if resp == True: log.write("release time set succesfully")
-            else:            log.write("release time set failed")
+            if resp == True: log.write("release set: SUCCESS")
+            else:            log.write("release set: FAILED")
     except Exception as exp:
         log.write(str(exp))
         pass
     
-
 # Parse setup.txt file and get data
-# -----------------------------------------------
-# get battery voltage from Arduino using I2C
-log.write("battery voltage is "+timer.getVoltage()+"v")
-# get video recording duration from setupfile
-REC_DUR = setup_file.getParam("recording")
-log.write("recording time is "+str(REC_DUR)+" min")
-print("recording time is "+str(REC_DUR)+" min")
-# getting video sections from setupfile
-section = setup_file.getParam("sections")
-# Error checking and converting to milliseconds to pass to raspivid
-if section > 0 and section <= 720:          
-	VIDEO_SECTION = section
-	PARAM[2] = str(VIDEO_SECTION*60*1000)
-log.write("recording sections "+str(VIDEO_SECTION)+" min")
-# getting video parameters (width and height) according to table
-v_mode = setup_file.getParam("videomode")
-if v_mode >= 0 and v_mode < 8: PARAM[8] = str(v_mode)
-# frames per second
-fps = setup_file.getParam("fps")
-if fps > 0 and fps <= 90: PARAM[12] = str(fps)
-# camera rotation
-rot = setup_file.getParam("rotation")
-if rot > 0 and rot < 360: PARAM[10] = str(rot)
+# getting parameters from file
+REC_DUR = setup_file.getParam("recording")              # get video recording duration from setupfile
+section = setup_file.getParam("sections")               # getting video sections from setupfile
+v_mode = setup_file.getParam("videomode")               # getting video parameters (width and height) according to table
+fps = setup_file.getParam("fps")                        # frames per second
+rot = setup_file.getParam("rotation")                   # camera rotation
+temp = setup_file.getParam("gpsinterval")               # get GPS logging interval
 
-# starting first video section
+# Error checking each parameter from file
+# Overwriting default parameter array (PARAM)
+if v_mode >= 0 and v_mode < 8: PARAM[8] = str(v_mode)
+if fps > 0 and fps <= 90: PARAM[12] = str(fps)
+if rot > 0 and rot < 360: PARAM[10] = str(rot)
+if gps_interval >= 0 and gps_interval < 3600: gps_interval = temp
+if section > 0 and section <= 720:   
+	VIDEO_SECTION = section
+	PARAM[2] = str(VIDEO_SECTION*60*1000)              # Converting to milliseconds to pass to raspivid 
+
+# Logging parametes
+#log.write("battery voltage: "+timer.getVoltage()+"v")# get battery voltage from Arduino using I2C
+log.write("recording sections: "+str(VIDEO_SECTION)+" min")
+log.write("recording time: "+str(REC_DUR)+" min")
+print("recording time: "+str(REC_DUR)+" min")
+
+# Starting first video section
+# start timer for gps recodings
 if REC_DUR > 0:
     poll = start_section()
-
+gps_timer = datetime.datetime.now()
 
 # MAIN LOOP START
 # exit conditions: recording time is over
@@ -175,10 +165,11 @@ while REC_DUR > 0:
         log.write("section finished")
         print("section finished")
         io.setRun()                 # indicating video processing (Green LED)
-        sleep(2)
+        sleep(1)
         move(REC_FILE)              # move file to USB
         log.logTemp()               # log CPU usage and temperature
         log.logCPU()
+        sleep(1)
         # substract interval from recording time
         # if recording time not over, start new section
         REC_DUR -= VIDEO_SECTION
@@ -187,49 +178,54 @@ while REC_DUR > 0:
             print("recording time left: "+str(REC_DUR)+" min")
             # starting new camera recording
             poll = start_section()
-    # ------
 
     # Checking for manual termination when switch/button used
     # Kills the current camera process and moves the file
     TERM = io.checkSwitch()
     if TERM == True:
-        log.write("killing current camera process: "+str(camera.pid))
+        log.write("killing camera process: "+str(camera.pid))
         camera.kill()
         sleep(5)
         move(REC_FILE)  # move file to USB
         break           # exiting the main loop when switch pulled low
 
+    # logging GPS data (when fix is present)
+    # interval for readings in seconds
+    if (datetime.datetime.now() - gps_timer).seconds > gps_interval:
+        gps.writeCSV()
+        gps_timer = datetime.datetime.now()
+        
     # set REC LED indicator on
     # update the poll - check if camera code is finished
     io.setRec()        
-    log.write(gps.writeCSV())
-    #gps.dumpData()     # debug
-    sleep(5)
+    sleep(2)
     poll = camera.poll()
 # -----------------------------------------------
-
+# MAIN LOOP END
 
 # if the code was terminated using button/switch
 # exit the program without sleep cycle
 if TERM == True:
-    log.write("code terminated using Switch")
+    log.write("code TERMINATED using switch")
 else:
     # if the program wasn't terminated
     # get sleep time from setup file and send to Arduino
     s_hr, s_min = setup_file.getParam("sleep") 
-    log.write("recording finished, sleep for "+str(s_hr)+"hr "+str(s_min)+"min")
+    log.write("setting sleep for "+str(s_hr)+"hr "+str(s_min)+"min")
     # sending data to Arduino using I2C
     # format: (byte)hour, (byte)minute
-    if timer.setSleep(s_hr, s_min): log.write("sleep set succesfully")
-    else:                           log.write("sleep failed")
-
+    if timer.setSleep(s_hr, s_min): log.write("sleep set: SUCCESS")
+    else:                           log.write("sleep set: FAILED")
 
 # Shutting down routine
 # Blink and turn off LED indicators
+io.clear()          # turn off both LED's
 io.blink(10)        # indicate code termination
 io.clear()          # turn off both LED's
 log.write("FINISH\n")
 gps.close()         # close GPS thread
-#os.system("sudo umount /home/pi/USB/")
-#os.system("sudo shutdown -h now")
-sys.exit()
+os.system("sudo umount /home/pi/USB/")
+print("SHUTTING DOWN")
+sleep(5)
+os.system("sudo shutdown -h now")
+exit()

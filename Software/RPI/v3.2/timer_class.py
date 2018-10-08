@@ -1,6 +1,7 @@
 #!/usr/bin/python2
 
 '''
+    Changed: October 7, 2018
 
     Class to interract with Timing Arduino controller 
     using I2C to exchange timming data
@@ -55,4 +56,36 @@ class Timer():
                 vol = float(vol)/1024 * 5
                 return str(vol)
             except: pass
-        
+
+# END Timer Class
+
+
+# When class module is started by itself
+# Following code is used for testing the LED's
+if __name__ == "__main__":
+
+    def print_flags():
+        sleep(1)
+        flag = []*2
+        flag = _timer.checkStatus()
+        print("Sleep flag: {}".format(flag[0]))
+        print("Release flag: {}".format(flag[1]))
+        sleep(1)
+
+    # Arduino COM object
+    print("--- Starting Arduino COM test ---\n")
+    print("use ($sudo i2cdetect -y 1) to check connection\n")
+    _timer = Timer()
+
+    print("Voltage reading from Arduino: {}".format(_timer.getVoltage()))
+    print_flags()
+
+    print("\nSetting rlease for 1 min ...")
+    _timer.setRelease(0, 1)
+    print_flags()
+
+    print("\nSetting sleep for 1 min ...")
+    _timer.setSleep(0, 1)
+    print_flags()
+
+    print("\nTest Done")
