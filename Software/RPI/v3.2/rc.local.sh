@@ -38,6 +38,7 @@ fi
 sem="/home/pi/USB/debug"
 if [ -f "$sem" ]; then
         echo 'Sempahore found - debug session'
+        touch /home/pi/DEBUG
 else
         echo 'Launching Script'
         sudo python /home/pi/code/main_code.py &

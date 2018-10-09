@@ -15,7 +15,7 @@
 
 #include <Wire.h>         // I2C protocol library
 
-#define VALVE       12     // Release MOSFET control (HIGH-ON, LOW-OFF)
+#define VALVE       7    // Release MOSFET control (HIGH-ON, LOW-OFF)
 #define BATTERY     A3    // Battery Monitor pin
 #define WAKEPIN     12    // Pi Power MOSFET control (LOW-ON, HIGH-OFF)
 #define ALIVE       11    // Checking Pi Status
@@ -59,7 +59,7 @@ void setup()
 
   for (uint8_t i = 0; i < 15; i++)
   {
-    digitalWrite(PCB_LED, HIGH);     // Valve OFF
+    digitalWrite(PCB_LED, HIGH);    // Valve OFF
     delay(200);
     digitalWrite(PCB_LED, LOW);     // Valve OFF
     delay(200);
