@@ -205,16 +205,12 @@ if __name__ == '__main__':
 
     # Check for provided file path argument
     # Print an error if argument is not provided
-    try:
-        SETUP_FILE = sys.argv[1]
-        print "Filepath: {}".format(SETUP_FILE)
-    except:
-        print "Error: filepath not provided"
-        exit()
-
+    _SETUP_FILE = "/home/pi/USB/setup.txt"
+    print "Test code started\nFile = "+_SETUP_FILE
+    
     # Create setup file object
     # opens and parses the file
-    setup_file = SetupFile(SETUP_FILE)
+    setup_file = SetupFile(_SETUP_FILE)
 
     # prints on the sreen the contant of parsed arrays
     # used for debugging

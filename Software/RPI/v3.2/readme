@@ -84,13 +84,4 @@
     in boot config add: 
     smsc95xx.turbo_mode=N
 
-    SidalRg
-
-    Camera OPTIONS:
-    Modes:
-    -md 5 (1640x922 max 40fps	Full)
-    -md 4 (1640x1232	max 40fps	Full)
-    Frames:
-    -fps
-
     raspivid -o test1.h264 -t 20000 -md 5 -fps 30

@@ -61,7 +61,7 @@ class Arduino():
 
 
 # When class module is started by itself
-# Following code is used for testing the LED's
+# Following code is used for testing the Class
 if __name__ == "__main__":
 
     def print_flags():

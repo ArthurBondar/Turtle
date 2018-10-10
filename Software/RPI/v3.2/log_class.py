@@ -71,14 +71,16 @@ class LogClass():
 
     # logs all the parameters in a row
     def logParam(self):
+        self.write(" ------ ")
         self.logTemp()
         self.logCPU()
         self.logThrottle()
         self.logRAM()
         self.logFreq()
+        self.write(" ------ ")
 
 # When class module is started by itself
-# Following code is used for testing the LED's
+# Following code is used for testing the Class
 if __name__ == '__main__':
 
     # Create instance of log class

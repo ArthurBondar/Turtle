@@ -18,9 +18,9 @@ class Timer():
 
     # Constructor
     # Uses min and seconds to set the timer
-    def __init__(self, min, sec):
+    def __init__(self, _min, _sec):
         # Save users time interval
-        self.set_time(min, sec)
+        self.set_time(_min, _sec)
         # set the timer
         self.reset()
 
@@ -37,7 +37,7 @@ class Timer():
         self.START = datetime.datetime.now()
 
     # set time for timer
-    def set_time(self, min, sec):
+    def set_time(self, _min, _sec):
         # Save users time interval
-        if min > 0 and sec > 0:
-            self.INVERVAL_S = min*60 + sec
+        if _min >= 0 and _sec >= 0:
+            self.INVERVAL_S = _min*60 + _sec

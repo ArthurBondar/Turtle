@@ -15,7 +15,7 @@
 
 #include <Wire.h>         // I2C protocol library
 
-#define VALVE       7    // Release MOSFET control (HIGH-ON, LOW-OFF)
+#define VALVE       7     // Release MOSFET control (HIGH-ON, LOW-OFF)
 #define BATTERY     A3    // Battery Monitor pin
 #define WAKEPIN     12    // Pi Power MOSFET control (LOW-ON, HIGH-OFF)
 #define ALIVE       11    // Checking Pi Status
@@ -177,7 +177,7 @@ void parseMessage()
   // Valve command
   if (OP == VALVE_CODE)
   {
-    // Starting Sleep mode (CRC succsess)
+    // Starting Sleep mode
     Release = (((uint32_t)hour) * 60) + (uint32_t)min;
     if (Release > 9000) // Error checking
     {
