@@ -1,5 +1,5 @@
 ## Underwater POV Camera Tag
-![cover image](https://raw.githubusercontent.com/ArthurBondar/Underwater-POV-Camera-Tag/tree/master/Documentation/images/CoverImage.jpg?raw=True "Cover Image")
+![cover image](https://github.com/ArthurBondar/Underwater-POV-Camera-Tag/tree/master/Documentation/images/CoverImage.jpg")
 ### Overview
 Underwater Point of View Camera Tag is designed for marine data collection. This device can be used as
 a POV tag for aquatic turtles, or in stationary monitoring applications. Camera Tag’s
@@ -15,4 +15,3 @@ During deployment, the Tags computer records video and GPS location at daytime. 
 * Battery Bank + Charger/Boost
 * Custom 3D printed parts
 * Custom made PCB
-
