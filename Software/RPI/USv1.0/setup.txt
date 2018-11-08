@@ -1,8 +1,0 @@
-release= 48:30
-sections = 30
-start =   20:30
-end= 22 : 30
-width= 1620
-height= 922
-fps= 25
-rotation= 90

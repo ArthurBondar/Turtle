@@ -1,14 +1,17 @@
 /*
-   June 22, 2018
+   October 10, 2018
 
    Timing controller program
    Using I2C protocol to interface with Raspberry Pi
-   Excepts various commands from the Pi:
-   0x01 - Starts sleep timer for the Pi
-   0x02 - Triggers release system after a cirtain period of time
+   Start a timer to wake Pi up at the end of set_Sleep cycle
+   Triggers PIN 4 on Raspberry Pi to reboot from Half/set_Sleep state
+
+   Excepts commands from the Pi:
+   0x01 - Starts set_Sleep timer for the Pi
 
    I2C message format:
    [Operation code][msg lenght][Hour][Minute]
+
    I2C status return:
    [SleepMode][ReleaseMode][BattVoltage]
 */
@@ -29,6 +32,8 @@
 
 #define PI_SHUTDOWN_S 300
 
+// Global Variables
+// Used to keep track of time, as well as LED state and I2C message
 volatile uint32_t t_Sleep = 0, Sleep = 0, t_Release = 0, Release = 0, Sec = 0;
 volatile bool Sleep_mode = false;
 volatile bool Release_mode = false;
@@ -37,26 +42,29 @@ volatile bool LED_state = false;
 volatile uint64_t Start = 0;
 volatile uint16_t Voltage = 0;
 
-//  INIT //
+//
+//  INIT // -----------------------------
+//
 void setup()
 {
   //  GPIO setup  //
-  pinMode(VALVE, OUTPUT);
-  pinMode(SLEEP_LED, OUTPUT);
-  pinMode(PCB_LED, OUTPUT);
-  pinMode(BATTERY, INPUT);
-  pinMode(ALIVE, INPUT);
+  pinMode(VALVE, OUTPUT);       // un-used, for potential release system
+  pinMode(SLEEP_LED, OUTPUT);   // Indicator on the PCB board
+  pinMode(PCB_LED, OUTPUT);     // PCB-LED on proMini board
+  pinMode(BATTERY, INPUT);      // Analog battery voltage pin
+  pinMode(ALIVE, INPUT);        // start trigger pin in High-Impedence
   pinMode(A4, INPUT);           // I2C pins setup
   pinMode(A5, INPUT);           // I2C pins setup
   digitalWrite(VALVE, LOW);     // Valve OFF
   // Initial setup
-  digitalWrite(SLEEP_LED, LOW);
+  digitalWrite(SLEEP_LED, LOW); // Start with set_Sleep LED on low
 
   //  I2C setup  //
   Wire.begin(I2C_ADDRESS);      // join i2c bus with address
-  Wire.onReceive(receiveEvent); // register event
-  Wire.onRequest(sendEvent);
+  Wire.onReceive(receiveEvent); // function pointer to receive event
+  Wire.onRequest(sendEvent);    // function pointer for requested I2C register/command
 
+  // Blink LED on the ProMini to start the program properly
   for (uint8_t i = 0; i < 15; i++)
   {
     digitalWrite(PCB_LED, HIGH);    // Valve OFF
@@ -64,6 +72,7 @@ void setup()
     digitalWrite(PCB_LED, LOW);     // Valve OFF
     delay(200);
   }
+
   // Trigger the Pi on reset
   triggerPi();
 
@@ -72,21 +81,28 @@ void setup()
   Serial.println("START");
 }
 
-//  MAIN LOOP  //
+//
+//  MAIN LOOP  // ---------------------------
+//
 void loop()
 {
-  // When message received from i2c //
+
+  // When message received from i2c
+  // Parse the message and reset the flag
   if (New_msg == true)
   {
     parseMessage(); // Getting data from I2C register
     New_msg = false;
   }
 
-  // Checking for start of Sleep mode //
-  if (Sleep_mode) digitalWrite(SLEEP_LED, HIGH); // Turning indicator ON
-  else            digitalWrite(SLEEP_LED, LOW);    // Turning indicator OFF
+  // Checking for start of set_Sleep mode //
+  // Turning ON/OFF the LED on the board to indicate set_Sleep mode
+  if (Sleep_mode) digitalWrite(SLEEP_LED, HIGH);
+  else            digitalWrite(SLEEP_LED, LOW);
 
-  // Checking for end of Sleep mode //
+  // Checking for end of set_Sleep mode //
+  // If Minutes timer is bigger than set_Sleep time
+  // Reset the flag + timer and trigger Pi to wake up
   if (Sleep_mode && (t_Sleep >= Sleep))
   {
     Sleep_mode = false;
@@ -104,7 +120,9 @@ void loop()
     Serial.println("Release valve TRIGGERED!");
   }
 
-  // Check if 1 sec past  //
+  // Enter if 1 sec past  //
+  // Increment seconds timer and Flicker LED
+  // Read battery voltage and save in memory
   if (millis() - Start > 1000)
   {
     Start = millis();                 // reset timer
@@ -113,10 +131,13 @@ void loop()
     LED_state = (LED_state == true) ? false : true;
     Voltage = analogRead(BATTERY);    // Saving battery Voltage
   }
-  // In case of overflow
+
+  // In case of overflow of the millis() timer (49 days)
+  // Resave new millis valus (lose 1 sec of measurement)
   if (Start > millis()) Start = millis();
 
-  // Keeping track of time with seconds
+  // If seconds timer overflows (every 60 sec)
+  // Increment the minutes timer if in sleep mode
   if (Sec >= 60)
   {
     Sec = 0;                          // seconds overflow
@@ -131,20 +152,22 @@ void loop()
     if (Sleep_mode) Serial.println("Sleep: " + String(t_Sleep + 1) + " out of " + String(Sleep));
     if (Release_mode) Serial.println("Release: " + String(t_Release + 1) + " out of " + String(Release));
   }
-}
+} // END LOOP
 
-//  FUNCTIONS  //
 //
-//  Interrrupt function, gets triggered when I2C new data available
+//  FUNCTIONS  // ---------------------------
 //
-void receiveEvent()
+
+//
+// Interrrupt function, gets triggered when I2C new data available
+void receiveEvent( void *arg )
 {
   New_msg = true;   // sets a flag for the main program
 }
 
 //
 //  function that receives I2C data and parses it
-//
+//  format: [(byte)Operation code][(byte)hours][(byte)minutes]
 void parseMessage()
 {
   byte hour = 0, min = 0, OP = 0;
@@ -162,7 +185,7 @@ void parseMessage()
   // Power timer command
   if (OP == SLEEP_CODE)
   {
-    // Starting Sleep mode
+    // Converting from: hour(24), minute(60) -> minutes
     Sleep = (((uint32_t)hour) * 60) + (uint32_t)min;
     if (Sleep > 1500) // Error checking
     {

@@ -1,0 +1,8 @@
+release = 72:00
+sections = 5 
+start = 15:30
+end = 15:45
+video mode = 4
+fps = 25
+rotation = 180
+gps interval = 20
