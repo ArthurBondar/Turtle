@@ -1,0 +1,81 @@
+
+
+Documentation
+
+This ducoment lists the changes and extra software packages used by the system.
+It illustrates the procedure steps needed to set up a new system.
+Follow this guide when a new raspberry pi is used
+
+
+- Go to raspi-config -> interfaces:
+    Disable: Serial - ssh over serial
+    Enable: I2C, Camera, 1-Wire, Serial - hardware
+
+- Enable hardware UART1 on the GPIOs:
+    Type: $ sudo nano /boot/config.txt 
+	Add: enable_uart=1
+	Install python-serial package:
+    $ sudo apt-get install python-serial
+
+- Allocate GPU memory to 128 (potential problem might be GPU overheating)
+	in /boot/config.txt find the commented line about GPU memory
+	uncomment and change the value to 128
+	
+- Installed exFAT file system support for the SD card
+    $ sudo apt-get install exfat-utils exfat-fuse
+
+- Install python SMBuss module for I2C
+    $ sudo apt-get install python-smbus python3-smbus python-dev python3-dev
+    $ sudo apt-get install i2c-tools
+    in /boot/config.txt Add: dtparam=i2c1=on
+	Add: dtparam=i2c_arm=on
+    Install smbus by typing: $ sudo pip install smbus2
+	If everything installed propery, Pi should be able to display arduino's address
+	Connect the Arduino board to the Pi, power them up and use this command:
+    $ i2cdetect -y 1
+	Arduino should appear in the table with the address 0x05
+
+- Install gpsd module: 
+    $ sudo apt-get install gpsd gpsd-clients python-gps
+    $ sudo killall gpsd
+	
+    Modify /etc/default/gpsd ----
+    START_DAEMON="true"
+    USBAUTO="true"
+    DEVICES="/dev/ttyS0"
+    GPSD_OPTIONS="-n"
+    GPSD_SOCKET="/var/run/gpsd.sock"
+    --------------------------------
+	
+	Run:
+    $ sudo ln -s /lib/systemd/system/gpsd.service /etc/systemd/system/multi-user.target.wants/
+	
+    Modify /lib/systemd/system/gpsd.service ----
+    [Install]
+    WantedBy=multi-user.target
+    Also=gpsd.socket
+    --------------------------------
+	
+	Add user pi to the gpsd group:
+    $ sudo usermod --append --group dialout gpsd
+    $ sudo service gpsd start
+	
+    If everything is done correctly, data should be streaming from the gps
+	Use the following commnad to verify (change the usb port is needed)
+    $ gpsmon /dev/ttyS0 
+    $ cgps -s
+
+- Configure timezone
+    $ sudo dpkg-reconfigure tzdata 
+
+
+- Increase Memory Kernel memory (might not be needed):
+    open /etc/sysctl.d/98-rpi.conf
+    ------------------
+    change:
+    vm.min_free_kbytes = 16384
+    to:
+    vm.min_free_kbytes = 32768
+    ------------------
+    in /boot/config add: 
+    smsc95xx.turbo_mode=N

@@ -1,0 +1,31 @@
+# This file is used to set up system configuration
+
+# Deployment days left
+days = 2
+
+# Time from boot until release (not implemented)
+release = 72:00
+
+# Duration of each video in minutes (default 30)
+sections = 15
+
+# Time for the device to turn on
+start = 21:30
+
+# Time for the device to turn off
+end = 22:10
+
+# Video Mode (default 5)
+video mode = 5
+
+# Frames per second (default 25)
+fps = 25
+
+# Rotation to be applied to the video (Default 180)
+rotation = 180
+
+# Interval for GPS capture in seconds (Default 50)
+gps interval = 55
+
+# Bitrate in Mbit/sec (Default 10) 
+bitrate = 10
