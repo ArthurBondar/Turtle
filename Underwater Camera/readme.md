@@ -1,5 +1,5 @@
 ## Underwater Camera
-![cover photo](Documentation/3d_model.jpg)
+![cover photo](Documentation/3d_model.JPG)
 
 ### Overview
 Underwater Camera Tag is designed for marine data collection. This device can be used as
