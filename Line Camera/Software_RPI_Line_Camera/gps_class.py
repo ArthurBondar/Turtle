@@ -95,7 +95,7 @@ class GPS_class():
         return str(row)
 
     else:
-      return "no fix"
+      return "no sat fix"
 
   # debug function to dump gps data to the screen
   def dumpData(self):
@@ -117,7 +117,7 @@ class GPS_class():
   # closing threads
   def close(self):
     gpsp.running = False
-    print("Stopping")
+    print("GPS Class: closing")
     gpsp.join()               # wait for the thread to finish what it's doing
 
 

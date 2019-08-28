@@ -29,7 +29,24 @@ class Gpio_class():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    def __init__(self):
+    def __init__(self, pcb_type = "underwater_camera_rev_A"):
+
+        if pcb_type == "underwater_camera_rev_A":
+            self.LED1 = 20
+            self.LED2 = 21
+            self.SW1 = 16
+        elif pcb_type == "line_camera_rev_A":
+            self.LED1 = 10
+            self.LED2 = 9
+            self.MCU2 = 17
+            self.SW1 = 21
+
+        self.MCU1 = 4
+        self.SW2 = 18
+        self.led_state = False
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+
         # declare IO
         GPIO.setup(self.LED1, GPIO.OUT)
         GPIO.setup(self.LED2, GPIO.OUT)

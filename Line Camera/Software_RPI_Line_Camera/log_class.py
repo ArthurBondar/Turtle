@@ -22,11 +22,11 @@ class LogClass():
 
     # writing single line statement starting with the date
     def write(self, _str):
-        for line in _str:
-            now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " | "
-            print(now + line)
-            with open(self.PATH, "a") as _file:
-                _file.write(now + line + '\r\n')
+	for line in _str.splitlines():
+        	now = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') + " | "
+        	print(now + line)
+        	with open(self.PATH, "a") as _file:
+            		_file.write(now + line + '\r\n')
 
     def space(self):
         with open(self.PATH, "a") as _file:
@@ -36,10 +36,10 @@ class LogClass():
     def logTemp(self):
         out = "empty"
         try:
-            out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'measure_temp'])
-            out = out.decode().splitlines()[0]
+                out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'measure_temp'])
+                out = out.decode().splitlines()[0]
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
         self.write("temp -> "+out)
 
     # log CPU usage
@@ -48,10 +48,10 @@ class LogClass():
         # copied from a forum
         out = "empty"
         try:
-            out = subprocess.check_output(['uptime'])
-            out = out.decode().splitlines()[0]
+                out = subprocess.check_output(['uptime'])
+                out = out.decode().splitlines()[0]
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
         self.write("cpu -> "+out[30:-1])
 
     # logs CPU throttling register
@@ -62,45 +62,47 @@ class LogClass():
     # 17: arm frequency capped has occurred
     # 18: throttling has occurred
     def logThrottle(self):
-        out = "empty"
+        out = "cmd failed"
         try:
-            out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'get_throttled'])
-            out = out.decode().splitlines()[0]
+                out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'get_throttled'])
+                out = out.decode().splitlines()[0]
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
         self.write("overheat -> " + out)
 
     # logs RAM usage
     def logRAM(self):
-        out = "empty"
+        out = "cmd failed"
         try:
-            out = subprocess.check_output(['free', '-h'])
-            out = (ram.decode().splitlines())[1]
-            out = out[39:-36]
+                out = subprocess.check_output(['free', '-h'])
+                out = (out.decode().splitlines())[1]
+                out = out[39:-36]
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)      
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
+	except Exception as exp:
+		out = str(exp)
+		print(out)
         self.write("RAM -> "+out)
 
     # log CPU frequency
     def logFreq(self):
-        out = "empty"
+        out = "cmd failed"
         try:
-            out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'measure_clock', 'arm'])
-            out = (out.decode().splitlines())[0]
+                out = subprocess.check_output(['/opt/vc/bin/vcgencmd', 'measure_clock', 'arm'])
+                out = (out.decode().splitlines())[0]
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)   
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
         self.write("clock -> "+out)
 
      # run iostat command to log
     def iostat(self):
-        out = "empty\nempty"
+        out = "cmd failed"
         try:
-            out = subprocess.check_output(['iostat', '-h', '1', '2'])
-            out = (out.decode().splitlines())
+                out = subprocess.check_output(['iostat', '-h', '5', '2'])
+                out = (out.decode().splitlines())
         except subprocess.CalledProcessError as e:
-            out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)  
-        for line in out:
-            self.write("disk -> " +line)
+                out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
+        self.write("disk -> " +out)
 
         # logs all the parameters in a row
     def logParam(self):
@@ -130,3 +132,4 @@ if __name__ == '__main__':
     print "Debug session finished"
     print "Output file = /home/pi/log_test.txt"
     exit()
+

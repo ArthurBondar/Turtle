@@ -26,6 +26,7 @@ class SetupFile():
     end = "17:00"
     datetime = "18-08-2019_18:30:30"   # format +"%d-%m-%Y_%T"
     timezone = "America/Halifax"       # default TZ
+    board = "underwater camera"
 
     # Constructor - opens the file and loads all the data into arrays
     def __init__(self, path):
@@ -52,6 +53,7 @@ class SetupFile():
                         if(p == "end"): self.end = val
                         if(p == "newdate-time"): self.datetime = val
                         if(p == "newtimezone"): self.timezone = val
+                        if(p == "boardversion"): self.board = val
                     except Exception as e: 
                         print(str(e))
 
@@ -68,6 +70,7 @@ class SetupFile():
             if(parameter == "end"): return self.end
             if(parameter == "newdate-time"): return self.datetime
             if(parameter == "newtimezone"): return self.timezone
+            if(parameter == "boardversion"): return self.board
             # returning any other parameter from the file
             for i in range(len(self.param)):
                 if(self.param[i] == parameter): return int(self.value[i])

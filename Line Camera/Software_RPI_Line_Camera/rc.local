@@ -13,33 +13,40 @@ echo 'rc.local START'
 # wait for system to boot
 sleep 5
 
-# file directories
-USB="/home/pi/USB"
-# /dev/sda1 USB disk
-DISK="/dev/mmcblk1"    
+USB_ROOT="/home/pi/USB"             # mounting point
+MICRO_SD="/dev/mmcblk1"             # microSD card
+USB_FLASH="/dev/sda1"               # USB flash stick
+DEVICE="None"                       # Chosen device
 
-# removing old file from USB dir
-if [ "$(ls -A $USB)" ]; then
-        sudo rm /home/pi/USB/*
-        echo 'USB directory cleaned'
+# removing any files from USB dir
+if [ "$(ls -A $USB_ROOT)" ]; then
+        sudo rm $USB_ROOT
+        echo 'mount directory cleaned'
 fi
 
-# check if USB stick is present
-# present - mount, not present - exit
-if [ "$(ls -A $DISK)" ]; then
-        sudo mount $DISK $USB
+# check if USB stick or microSD present
+if [ "$(ls -A $MICRO_SD)" ]; then
+        sudo mount $MICRO_SD $USB_ROOT
         sleep 1
-        echo 'USB mounted'
-
+        DEVICE=$MICRO_SD
 else
-        echo 'USB not present, exiting'
-        exit 0
+        # check usb stick
+        if [ "$(ls -A $USB_FLASH)" ]; then
+                sudo mount $USB_FLASH $USB_ROOT
+                sleep 1
+                DEVICE=$USB_FLASH
+        else
+                echo 'no storage device present'
+                echo 'rc.local STOP'
+                exit 0
+        fi
 fi
+echo 'device '$DEVICE' mounted'
 
 # checking for debug semaphore
 # if semaphore file - debug exist script doesnt run
-sem="/home/pi/USB/debug"
-if [ -f "$sem" ]; then
+SEM="debug"
+if [ -f "$DEVICE/$SEM" ]; then
         echo 'Sempahore found - debug session'
         touch /home/pi/DEBUG_SESSION
 else
@@ -48,9 +55,8 @@ else
 	/usr/bin/tvservice -o
 
         echo 'Launching Script ..'
-        sudo python /home/pi/Software_1_5/main_code.py &
+        sudo python /home/pi/Software/main_code.py &
 fi
 
 echo 'rc.local STOP'
-
 exit 0

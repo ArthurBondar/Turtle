@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
 '''
-    August 18, 2019
+    August 28, 2019
     Line Camera Rev. A
 
     Uses raspberry Pi camera throught raspivid program
@@ -33,6 +33,7 @@ from gps_class import GPS_class     # custom gps class
 import subprocess                   # for subprocess opening
 
 # Declaration of default parameters
+SOFTWARE_V = "Aug 28, 2019"
 DUR =               480             # video duration in minutes
 VIDEO_SECTION =     20              # video sections duration min
 USB_FOLDER =        "/home/pi/USB/"
@@ -45,6 +46,7 @@ poll = 1                            # check for camera thread execution
 REC_FILE = ""                       # video section file name variable
 led_state = False                   # boolean value to toggle PCB LED
 gps_enable = 0                      # boolean value the gps module
+DEBUG = False			    # code in debug mode
 
 # Camera default paramters
 # array of parameters is passed to raspivid program as cmd args
@@ -68,13 +70,11 @@ PARAM = [
 def start_section(_log, count):
     global camera, REC_FILE
     # assemble filename
-    REC_FILE = USB_FOLDER + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + ".h264"
-    PARAM[4] = REC_FILE             # parameter 4 is filename
+    REC_FILE = USB_FOLDER + "s"+str(count)+"_" + datetime.datetime.now().strftime('%Y-%m-%d_%H_%M_%S') + ".h264"
+    PARAM[4] = REC_FILE                             # parameter 4 is filename
     # start camera section
     camera = subprocess.Popen(PARAM,stdout = subprocess.PIPE,stderr = subprocess.PIPE)
     sleep(1)
-    _log.write("camera: " + camera.stdout.read().decode())
-    _log.write("camera err: " + camera.stderr.read().decode())
     _log.write("section ["+str(count)+"] started | camera pid: "+str(camera.pid)+" | ret code: "+str(camera.poll())+" | recording ...")
     return camera.poll()
 
@@ -84,26 +84,29 @@ def set_wakeup(_setup_file, _arduino, _log):
     # get sleep time from setup file and send to Arduino
     s_hr, s_min = _setup_file.getParam("sleep")
     _log.write("setting sleep for "+str(s_hr)+"hr "+str(s_min)+"min")
-    # sending data to Arduino using I2C
-    # format: (byte)hour, (byte)minute
-    if _arduino.setSleep(s_hr, s_min):  _log.write("sleep set: SUCCESS")
-    else:                               _log.write("sleep set: FAILED")
+    # format: (byte)hour, (byte)minute sending data to Arduino using I2C
+    if _arduino.setSleep(s_hr, s_min):  _log.write("Arduino sleep set succesfully")
+    else:                               _log.write("ERROR: failed setting sleep interval with Arduino ")
 
 # Shutting down routine
 # finish recording, shutdown the device
 def end_operation(_io, _log):
+    global DEBUG
     _io.blink(10)                            # indicate code termination
-    _log.write("deployment FINISHED - unmounting usb\r\n")
-    subprocess.call(['umount', USB_FOLDER])
-    subprocess.call(['poweroff'])
+    if DEBUG == False:
+    	_log.write("deployment FINISHED - unmounting usb\r\n")
+    	subprocess.call(['umount', USB_FOLDER])
+    	subprocess.call(['poweroff'])
+        exit()
+    else:
+	_log.write("FINISHED - debug mode")
+	exit()
 
 # Save CPU and IO parameters to the log file
 def log_parameters(_io, _log, _arduino):
     global camera
     _io.clear()
     _io.setRun()
-    _log.write("camera output: " + camera.stdout.read().decode())
-    _log.write("camera error: " + camera.stderr.read().decode())
     _log.logParam()              	    # log system parameters
     _log.write("Temp "+arduino.getTemperature()+" C")
     _log.write("battery voltage: "+arduino.getVoltage()+" V")
@@ -111,19 +114,22 @@ def log_parameters(_io, _log, _arduino):
 
 # Run Linux Shell Command as a process and log the result - output in log file
 def run_cmd (args, cmd_name):
+    out = "none"
     try:
         out = subprocess.check_output(args)             # run command and wait for output
         log.write(cmd_name+" finished succesfully")
         return out
     except subprocess.CalledProcessError as e:          # catch non 0 process exit status
-        log.write("ERROR: "+cmd_name+" failed | command = "+str(args)+" | exit code = "+str(e.returncode)+" | output = "+str(e.output))
+        log.write("ERROR: "+cmd_name+" failed | command = "+str(e.cmd)+" | exit code = "+str(e.returncode)+" | output = "+str(e.output)+" | out2 = "+str(out))
+
 
 # Creating instance of objects
 # classes used for: parsing setup file, GPIO controll and I2C commands
 log = LogClass(LOG_FILE)                # Log file object
 arduino = Arduino()                     # Arduino COM object
 setup_file = SetupFile(SETUP_FILE)      # Setup file object
-io = Gpio_class()                       # GPIO class (switch,led,alive)
+pcb_type = setup_file.getParam("boardversion") # Getting board version string
+io = Gpio_class( pcb_type )             # GPIO class (switch,led,alive)
 io.clear()                              # turn off al LEDs
 led_timer = Timer(0, 1)                 # to toggle LEDs
 rec_timer = Timer(1, 0)                 # checks if recording time is over
@@ -132,6 +138,10 @@ rec_timer = Timer(1, 0)                 # checks if recording time is over
 # indicate beginning of the code with LED flashing
 log.space()
 log.write("START")
+if len(sys.argv) > 1:
+	DEBUG = True	# Check if debug mode should be entered
+	log.write("Debug Mode entered")
+log.write("board type: "+pcb_type+" software: "+SOFTWARE_V)
 io.blink(10)
 
 # Parse USB/setup.txt file and get data
@@ -146,9 +156,12 @@ REC_DAY = setup_file.getParam("days")              # get the current recording d
 log_timer = Timer(int(setup_file.getParam("loginterval")), 0) # Timer to log CPU and IO data
 # Enabling the GPS module
 gps_enable = setup_file.getParam("gpsenable")      # value to enable of disable use of the GPS
-if gps_enable == 1: 
+if gps_enable == 1:
     gps_timer = Timer(0, int(setup_file.getParam("gpsinterval"))) # Timer to log GPS data to CSV
     gps = GPS_class(USB_FOLDER)
+    log.write("GPS enabled")
+else:
+    run_cmd(['killall', 'gpsd'], "disabling gps process")   # disabling GPSD process
 
 # Setting TimeZone
 if setup_file.getParam("settimezone") == 1:
@@ -187,16 +200,14 @@ log.write("rec duration: "+str(REC_DUR)+"m,  each section: "+str(VIDEO_SECTION)+
 log.write("parameters "+str(PARAM))
 
 # Starting first video section
-i_sec = 0               # video section counter
+i_sec = 0                                       # video section counter
 if REC_DUR > 0:
     poll = start_section(log, i_sec)
     i_sec+=1
 else:
-    log.write("Warning - recording duration is 0")
-    # Setting to the timer for a new recording day
-    set_wakeup(setup_file, arduino, log)
-    # sequence that unmonts the disk and shuts off the Pi
-    end_operation(io, log)
+    log.write("WARNING: recording -days- duration is 0")
+    set_wakeup(setup_file, arduino, log)        # Setting to the timer for a new recording day
+    end_operation(io, log)                      # sequence that unmonts the disk and shuts off the Pi
 
 
 # MAIN LOOP START
@@ -204,11 +215,12 @@ else:
 # -----------------------------------------------
 while REC_DUR > 0:
 
-    # checking if section is finished
+    # checking if section is finished and starting new section
     # poll == None -> section is still running
-    # 1. move file to USB
-    # 2. start new recording
     if not poll == None:
+	if camera.returncode != 0:		# checking for critinal camera errors
+		log.write("ERROR: Camera process failed | strerr = "+camera.stderr.read().decode()+"| code = "+str(camera.returncode))
+		break				# terminate if camera returned non zero
         log.write("section finished")
         log_parameters(io, log, arduino)
         # substract interval from recording time
@@ -228,7 +240,7 @@ while REC_DUR > 0:
         log.write("closing camera process: "+str(camera.pid))
         camera.kill()
         log_parameters(io, log, arduino)
-        sleep(1)
+        sleep(0.5)
         end_operation(io, log)
 
     # Check to see if recording time is over
@@ -239,7 +251,7 @@ while REC_DUR > 0:
             log.write("closing camera process: "+str(camera.pid))
             camera.kill()
             log_parameters(io, log, arduino)
-            sleep(1)
+            sleep(0.5)
             break                       # exiting the main loop
         # reseting the timer to start a new minute
         rec_timer.reset()
@@ -261,20 +273,21 @@ while REC_DUR > 0:
         log_parameters(io, log, arduino)
         log_timer.reset()
 
-    sleep(0.2)
+    sleep(0.25)
     poll = camera.poll()
 # -----------------------------------------------
 # MAIN LOOP END
 
 # If another day is left in deployment, set up the wake up Arduino timer
 if REC_DAY > 1:
-    # Setting to the timer for a new recording day
-    set_wakeup(setup_file, arduino, log)
+    set_wakeup(setup_file, arduino, log)    # Setting to the timer for a new recording day
 
 # Decrementing deployment day counter in setup.txt
 setup_file.setDays(REC_DAY, REC_DAY - 1)
 log.write("recording days left: "+str(REC_DAY - 1))
-if gps_enable == 1: gps.close()
+#if gps_enable == 1:
+#	log.write("closing GPS module")
+#	gps.close()
 
 # sequence that unmonts the disk and shuts off the Pi
 end_operation(io, log)

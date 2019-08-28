@@ -47,7 +47,7 @@ fps = 25
 # between 0 and 359
 rotation = 180
 
-# Enable the use of the GPS module (yes/no)
+# Enable the use of the GPS module ( yes / no )
 gps enable = no
 # Interval for GPS capture in seconds (Default 50s)
 gps interval = 60
@@ -66,3 +66,5 @@ bitrate = 10
 # Interval for logging processor data to the disk (in minutes)
 log interval = 5
 
+# Specify the printed circuit board version ( line camera / underwater camera )
+board version = line camera
