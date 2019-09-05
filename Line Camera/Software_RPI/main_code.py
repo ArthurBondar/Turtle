@@ -33,7 +33,7 @@ from gps_class import GPS_class     # custom gps class
 import subprocess                   # for subprocess opening
 
 # Declaration of default parameters
-SOFTWARE_V = "Aug 28, 2019"
+SOFTWARE_V = "Sep 3, 2019"
 DUR =               480             # video duration in minutes
 VIDEO_SECTION =     20              # video sections duration min
 USB_FOLDER =        "/home/pi/USB/"
@@ -97,10 +97,10 @@ def end_operation(_io, _log):
     	_log.write("deployment FINISHED - unmounting usb\r\n")
     	subprocess.call(['umount', USB_FOLDER])
     	subprocess.call(['poweroff'])
-        exit()
+        sys.exit()
     else:
 	_log.write("FINISHED - debug mode")
-	exit()
+	sys.exit()
 
 # Save CPU and IO parameters to the log file
 def log_parameters(_io, _log, _arduino):
@@ -131,8 +131,8 @@ setup_file = SetupFile(SETUP_FILE)      # Setup file object
 pcb_type = setup_file.getParam("boardversion") # Getting board version string
 io = Gpio_class( pcb_type )             # GPIO class (switch,led,alive)
 io.clear()                              # turn off al LEDs
-led_timer = Timer(0, 1)                 # to toggle LEDs
-rec_timer = Timer(1, 0)                 # checks if recording time is over
+led_timer = Timer(0, 0.5)                 # to toggle LEDs
+rec_timer = Timer(0, 10)                # checks if recording time is over
 
 # Logging beginning of the program
 # indicate beginning of the code with LED flashing
@@ -141,7 +141,7 @@ log.write("START")
 if len(sys.argv) > 1:
 	DEBUG = True	# Check if debug mode should be entered
 	log.write("Debug Mode entered")
-log.write("board type: "+pcb_type+" software: "+SOFTWARE_V)
+log.write("board type: "+pcb_type+", software: "+SOFTWARE_V)
 io.blink(10)
 
 # Parse USB/setup.txt file and get data
@@ -166,11 +166,13 @@ else:
 # Setting TimeZone
 if setup_file.getParam("settimezone") == 1:
     new_tz = setup_file.getParam("newtimezone")
+    run_cmd(['rm', '/etc/localtime'], "remove previous time zone")
     run_cmd(['ln', '-s', '/usr/share/zoneinfo/'+new_tz, '/etc/localtime'], "set time zone")
+    log.logTZ()
 # Setting DateTime
 if setup_file.getParam("setdate-time") == 1:
     new_dt = setup_file.getParam("newdate-time")
-    run_cmd(['date', '+\'%d-%m-%Y_%T\'', new_dt], "set date-time")
+    run_cmd(['date', '+\'%Y-%m-%dT%H:%M:%S\'', '-s', new_dt], "set date-time")
     # Write time to RTC
     run_cmd(['hwclock', '--systohc'], "write time to RTC")
 
@@ -203,15 +205,16 @@ log.write("parameters "+str(PARAM))
 i_sec = 0                                       # video section counter
 if REC_DUR > 0:
     poll = start_section(log, i_sec)
+    log_parameters(io, log, arduino)
     i_sec+=1
 else:
-    log.write("WARNING: recording -days- duration is 0")
+    log.write("WARNING: recording duration is 0, device woke up before start time")
     set_wakeup(setup_file, arduino, log)        # Setting to the timer for a new recording day
     end_operation(io, log)                      # sequence that unmonts the disk and shuts off the Pi
 
 
 # MAIN LOOP START
-# exit conditions: recording time is over
+# exit conditions: recording time is over / switch triggered / camera failed
 # -----------------------------------------------
 while REC_DUR > 0:
 
@@ -222,7 +225,6 @@ while REC_DUR > 0:
 		log.write("ERROR: Camera process failed | strerr = "+camera.stderr.read().decode()+"| code = "+str(camera.returncode))
 		break				# terminate if camera returned non zero
         log.write("section finished")
-        log_parameters(io, log, arduino)
         # substract interval from recording time
         # if recording time not over, start new section
         REC_DUR -= VIDEO_SECTION
@@ -252,7 +254,7 @@ while REC_DUR > 0:
             camera.kill()
             log_parameters(io, log, arduino)
             sleep(0.5)
-            break                       # exiting the main loop
+            break          # exiting the main loop
         # reseting the timer to start a new minute
         rec_timer.reset()
 
@@ -287,7 +289,7 @@ setup_file.setDays(REC_DAY, REC_DAY - 1)
 log.write("recording days left: "+str(REC_DAY - 1))
 #if gps_enable == 1:
 #	log.write("closing GPS module")
-#	gps.close()
+#	gps.close()     # hangs and breaks the code !
 
 # sequence that unmonts the disk and shuts off the Pi
 end_operation(io, log)

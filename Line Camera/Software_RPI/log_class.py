@@ -98,7 +98,7 @@ class LogClass():
     def iostat(self):
         out = "cmd failed"
         try:
-                out = subprocess.check_output(['iostat', '-h', '5', '2'])
+                out = subprocess.check_output(['iostat', '-h'])
                 out = (out.decode())
         except subprocess.CalledProcessError as e:
                 out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
@@ -106,14 +106,14 @@ class LogClass():
 
         # logs all the parameters in a row
     def logParam(self):
-        self.write("Parameters: ")
+        self.write(" - - - - - - - ")
         self.logTemp()
         self.logCPU()
         self.logThrottle()
         self.logRAM()
         self.logFreq()
         self.iostat()
-        self.write(" . . . . . . . ")
+        self.write(" - - - - - - - ")
 
     def logTZ(self):
         out = "empty"
@@ -124,7 +124,6 @@ class LogClass():
                 out = "ERROR: command failed code = "+str(e.returncode)+" msg = "+str(e.output)
         self.write("Timezone -> "+out)
 
-ln -s /etc/localtime /usr/share/zoneinfo/America/Los_Angeles
 
 # When class module is started by itself
 # Following code is used for testing the Class

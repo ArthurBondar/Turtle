@@ -23,31 +23,36 @@ from smbus2 import SMBusWrapper, i2c_msg,  SMBus
 
 class Arduino():
 
-    BYTE_COUNT = 3      # number of bytes returned by Arduino in response to check cmd
+    BYTE_COUNT = 5      # number of bytes returned by Arduino in response to check cmd
     ARDUINO = 0x05      # fixed arduino i2c address
     SLEEP_CMD = 0x01    # command to set up sleep time
     CHECK_CMD = 0xAA    # command to check sleep status and battery voltage
     RTC_ADDR = 0x68     # ds3231 address for getting temperature
-    ADC_SCALE = 2       # resistor divider scale on the arduino
-    ADC_REF = 3.3       # arduino reference voltage
+    VOLT_MULT = 1000	# multiplier for float i2c trasmittion
 
     # set sleep time for arduino and return result
     def setSleep(self, hour, min):
         ret = False
         with SMBusWrapper(1) as bus:
-           bus.write_i2c_block_data(self.ARDUINO, self.SLEEP_CMD, [hour,min])
-           sleep(0.5)
-           resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
-           if(resp[0] == 1):
-               ret = True
+	   try:
+           	bus.write_i2c_block_data(self.ARDUINO, self.SLEEP_CMD, [hour,min])
+           	sleep(0.5)
+           	resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
+           	if(resp[0] == 1):
+               		ret = True
+	   except Exception as e:
+		print(str(e))
 
         return ret
 
     # return the sleep status flag from arduino
     def checkStatus(self):
         with SMBusWrapper(1) as bus:
-           resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
-           return resp[0]
+		try:
+           		resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
+           		return resp[0]
+		except Exception as e:
+			print(str(e))
 
         return 0
 
@@ -55,23 +60,27 @@ class Arduino():
     def getVoltage(self):
         ret = "0"
         with SMBusWrapper(1) as bus:
-            resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
-            try:
-                vol = (resp[2] << 8) | resp[1]
-                vol = float(vol)/1024 * self.ADC_REF * self.ADC_SCALE
+	    try:
+            	resp = bus.read_i2c_block_data(self.ARDUINO, self.CHECK_CMD, self.BYTE_COUNT)
+                vol = (resp[4] << 24) | (resp[3] << 16) | (resp[2] << 8) | resp[1]
+                vol = float(vol) / self.VOLT_MULT
                 ret = str(round(vol, 3))
-            except: pass
+            except Exception as e:
+		print(str(e))
 
 	    return ret
 
     # get temperature from DS3231 - return of type string (in C)
     def getTemperature(self):
-        ret = "0"
+        ret = "error"
         with SMBusWrapper(1) as bus:
-            byte_tmsb = bus.read_byte_data(self.RTC_ADDR, 0x11)
-            byte_tlsb = bin(bus.read_byte_data(self.RTC_ADDR, 0x12))[2:].zfill(8)
-            Celsius = byte_tmsb + int(byte_tlsb[0])*2**(-1) + int(byte_tlsb[1])*2**(-2)
-            ret = str(round(Celsius, 1))
+	    try:
+            	byte_tmsb = bus.read_byte_data(self.RTC_ADDR, 0x11)
+            	byte_tlsb = bin(bus.read_byte_data(self.RTC_ADDR, 0x12))[2:].zfill(8)
+            	Celsius = byte_tmsb + int(byte_tlsb[0])*2**(-1) + int(byte_tlsb[1])*2**(-2)
+            	ret = str(round(Celsius, 1))
+	    except Exception as e:
+		print(str(e))
         return ret
 
 # END Timer Class

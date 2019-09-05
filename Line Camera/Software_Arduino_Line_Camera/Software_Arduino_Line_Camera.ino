@@ -32,14 +32,15 @@
 #define SDA_P         6       // D6 - connected to I2C SDA line         
 #define SCL_P         7       // D6 - connected to I2C SCL line - WAKEUP TRIGGER
 #define BATTERY       A2      // Battery Monitor pin
-#define LED_1         10      // D10 - connected to LED 1
-#define LED_2         11      // D11 - connected to LED 2
+#define LED_1         11      // D10 - connected to LED 1
+#define LED_2         10      // D11 - connected to LED 2
 #define LED_PCB       13      // D13 - breakout board LED
 
 // ADC parameters
-#define ADC_REF       5.0       // use 3.3 for 8MHz arduino
+#define ADC_REF       3.3     // use 3.3 for 8MHz arduino
 #define ADC_SAMP      5       // Average ADC batt readings
-#define ADC_SCALE     2       // Resistor divider for the ADC values
+#define ADC_SCALE     1.5     // Resistor divider for the ADC values
+#define VOLT_MULT     1000.0  // Multiplier for i2c transmission - illiminates floats
 // Timing Interrupt parameters
 #define CLOCK_FREQ    16000000 // use 8M for Arduino with 8MHz clock used
 #define PRESCALE      256     // Core Clock divider for the timer
@@ -59,7 +60,7 @@ volatile bool New_msg = false;
 volatile bool LED_state = false;
 volatile bool Sec_INT = false;
 volatile bool Message_flag = false;
-volatile uint16_t Voltage = 0;
+volatile uint32_t Voltage = 0;
 
 //
 //  INIT // -----------------------------
@@ -82,7 +83,7 @@ void setup()
   digitalWrite(LED_PCB, LOW);
 
   // Blink LED on the ProMini to start the program properly
-  for (uint8_t i = 0; i < 15; i++, delay(200))
+  for (uint8_t i = 0; i < 10; i++, _delay(250))
     digitalWrite(LED_PCB, (int) i % 2);
 
   cli();        //stop all interrupts
@@ -101,8 +102,8 @@ void setup()
   Wire.onReceive(receiveEvent); // function pointer to receive event
   Wire.onRequest(sendEvent);    // function pointer for requested I2C register/command
 
-  digitalWrite(A4, LOW);        // Disable Pullup - RPI has pullups
-  digitalWrite(A5, LOW);
+  //digitalWrite(A4, LOW);        // Disable Pullup - RPI has pullups
+  //digitalWrite(A5, LOW);
 
   // Trigger the Pi on reset
   triggerPi(SCL_P);
@@ -137,7 +138,6 @@ void loop()
     enableGPS(true);
   }
 
-
   // Checking for end of set_Sleep mode //
   // If Minutes timer is bigger than set_Sleep time
   // Reset the flag + timer and trigger Pi to wake up
@@ -155,13 +155,17 @@ void loop()
   if (Sec_INT) {
     Sec_INT = false;
     // flick the LED
-    LED_state = (LED_state == true) ? false : true;
-    digitalWrite(LED_PCB, LED_state);
+    digitalWrite(LED_PCB, HIGH);
+    _delay(30);
+    digitalWrite(LED_PCB, LOW);
+    //
+    //digitalWrite(LED_PCB, LED_state);
     // Battery voltage reading
     uint16_t adc_avg = 0;
     for (int i = 0; i < ADC_SAMP; i++)
       adc_avg += analogRead(BATTERY);
-    Voltage = (uint16_t) (adc_avg / ADC_SAMP); // Saving battery Voltage
+    adc_avg = (uint16_t) (adc_avg / ADC_SAMP); // Saving battery Voltage
+    Voltage = (adc_avg * ADC_REF * ADC_SCALE * VOLT_MULT) / (1024);
 
 #ifdef DEBUG //  DEBUG  //
 
@@ -176,18 +180,24 @@ void loop()
     else t_Sleep = 0;
 #ifdef DEBUG //  DEBUG  //
     if (Sleep_mode) Serial.println("Sleep: " + String(t_Sleep + 1) + " out of " + String(Sleep));
-    Serial.println("ADC: " + String(Voltage) + " Voltage: " + String( ((float)Voltage * ADC_REF * ADC_SCALE) / 1024) );
+    Serial.println(" Voltage: " + String( Voltage / VOLT_MULT ) + "v");
 #endif
   }
 
 #ifdef DEBUG //  DEBUG  //
   if (Message_flag == true) {
     Message_flag = false;
-    Serial.println("message sent over I2C");
+    byte resp[] = {0, 0, 0, 0, 0};
+    resp[0] = (Sleep_mode == true) ? 0x01 : 0x00;             // byte 1 - sleep flag (1/0)
+    resp[1] = (byte) ( Voltage & 0x000000FF);        // byte 2 - Voltage LSB
+    resp[2] = (byte) ( (Voltage & 0x0000FF00) >> 8); // byte 3 - Votlage B2
+    resp[3] = (byte) ( (Voltage & 0x00FF0000) >> 16);// byte 3 - Votlage B3
+    resp[4] = (byte) ( (Voltage & 0xFF000000) >> 24);// byte 3 - Votlage MSB
+    for (int i = 0; i < 5; i++, Serial.print(", ")) Serial.print(resp[i], HEX);
+    Serial.println();
   }
 #endif
 } // END LOOP
-
 
 //
 //  Interrupt running every seconds to increment the clock (F=1Hz)
@@ -265,7 +275,7 @@ void triggerPi(int pin)
 {
   digitalWrite(pin, LOW);   // setting pin LOW
   pinMode(pin, OUTPUT);     // switching port from High-Z to OUTPUT
-  for (uint32_t i = 0; i < 100000; i++); // Delay loop
+  _delay(1);
   pinMode(pin, INPUT);      // enabling Tri-state
 }
 
@@ -275,11 +285,23 @@ void triggerPi(int pin)
 //
 void sendEvent()
 {
-  byte resp[] = {0, 0, 0};
+  byte resp[] = {0, 0, 0, 0, 0};
 
-  resp[0] = (Sleep_mode == true) ? 0x01 : 0x00;
-  resp[1] = (byte) (Voltage & 0x00FF);
-  resp[2] = (byte) ((Voltage & 0xFF00) >> 8);
-  Wire.write(resp, 3);
+  resp[0] = (Sleep_mode == true) ? 0x01 : 0x00;             // byte 1 - sleep flag (1/0)
+  resp[1] = (byte) ( Voltage & 0x000000FF);        // byte 2 - Voltage LSB
+  resp[2] = (byte) ( (Voltage & 0x0000FF00) >> 8); // byte 3 - Votlage B2
+  resp[3] = (byte) ( (Voltage & 0x00FF0000) >> 16);// byte 3 - Votlage B3
+  resp[4] = (byte) ( (Voltage & 0xFF000000) >> 24);// byte 3 - Votlage MSB
+  Wire.write(resp, 5);
   Message_flag = true;
+}
+
+// foor loop delay
+void _delay(uint32_t ms)
+{
+  uint32_t start = micros();
+  while ( micros() - start < ms*1000 ) {
+    //if (start + ms*1000 < micros() ) start = micros();
+    yield();
+  }
 }

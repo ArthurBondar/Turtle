@@ -84,7 +84,7 @@ gpu_mem=256
 dtoverlay=i2c-rtc,ds3231
 
 # Disable WIFI for deployment - uncomment
-#dtoverlay=pi3-disable-wifi
+dtoverlay=pi3-disable-wifi
 
 # Enable SDIO interface for microSD
 # Note: Wifi must be disables, since its a shared interface

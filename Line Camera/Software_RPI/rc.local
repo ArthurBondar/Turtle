@@ -6,10 +6,6 @@
 # Make sure that the script will "exit 0" on success or any other
 # value on error
 
-# starting the script
-# waiting for system to boot
-echo 'rc.local START'
-
 # wait for system to boot
 sleep 5
 
@@ -17,6 +13,9 @@ USB_ROOT="/home/pi/USB"             # mounting point
 MICRO_SD="/dev/mmcblk1"             # microSD card
 USB_FLASH="/dev/sda1"               # USB flash stick
 DEVICE="None"                       # Chosen device
+DEBUG="/home/pi/rc_debug"
+
+echo 'rc.local START'
 
 # removing any files from USB dir
 if [ "$(ls -A $USB_ROOT)" ]; then
@@ -46,8 +45,8 @@ echo 'device '$DEVICE' mounted'
 # checking for debug semaphore
 # if semaphore file - debug exist script doesnt run
 SEM="debug"
-if [ -f "$DEVICE/$SEM" ]; then
-        echo 'Sempahore found - debug session'
+if [ -f "$USB_ROOT/$SEM" ]; then
+        echo 'Sempahore '$DEVICE/$SEM' found - debug session'
         touch /home/pi/DEBUG_SESSION
 else
         echo 'Disabeling HDMI ..'

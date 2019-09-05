@@ -14,6 +14,7 @@
 
 import RPi.GPIO as GPIO
 from time import sleep
+import sys
 
 class Gpio_class():
 
@@ -104,10 +105,13 @@ class Gpio_class():
 # Following code is used for testing the LED's
 if __name__ == '__main__':
 
-    print "Testing LEDs -----------------------"
+    if len(sys.argv) > 1:
+	print "board type: "+str(sys.argv[1])
+	_io = Gpio_class(str(sys.argv[1]))
+    else:
+	print "no board specified"
+	_io = Gpio_class()
 
-    # Create LED object
-    _io = Gpio_class()
     _io.clear()
 
     # Testing Recording LED (RED)
