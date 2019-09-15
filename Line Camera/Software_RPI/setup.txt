@@ -1,32 +1,33 @@
 # This file is used to set up system configuration
 # Edit fields after the equals sign
-# Use comments (#) for reference
+# Use comments, marked (#), for reference
 
 # Number of recording days left since start of the program
 # Use this parameter to limit the number of recording cycles
 # If unused, set to a high number > 5
-days = 4
+days = 2
 
-# Duration of each video in minutes (default 30)
-sections = 10
+# Duration of each video section in minutes (default 30)
+sections = 30
 
 # Time for the device to turn on in 24hr format [hh:mm]
-start = 15:40
+start = 08:00
 
 # Time for the device to turn off in 24hr format [hh:mm]
-end = 15:55
+end = 22:00
 
 # New datetime and timezone parameers 
 # Note: should only be set once after coin cell battery replacement
 # Set new system date and time (yes/no)
-set date-time = no
 # New datetime, format: DD-MM-YYYY T HH:MM:SS
-new date-time = 2019-09-02 T 13:00:00
-# Set new system timezone (yes/no)
-set timezone = no
-# Reference - https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
-new timezone = America/Halifax
+set date-time = no
+new date-time = 2019-09-14 T 20:30:00
 
+# Set new system timezone (yes/no)
+# Reference - https://en.wikipedia.org/wiki/List_of_tz_database_time_zones
+# use America/New_York for USA, MA
+set timezone = no
+new timezone = America/Halifax
 
 # Video recording mode
 #	Mode	Resolution	Ratio	FPS		FOV
@@ -46,7 +47,7 @@ fps = 30
 
 # Rotation of the camera module (Default 180) 
 # between 0 and 359
-rotation = 180
+rotation = 0
 
 # Enable the use of the GPS module (yes/no)
 gps enable = yes
@@ -65,7 +66,7 @@ gps interval = 60
 bitrate = 10
 
 # Interval for logging processor data to the disk (in minutes)
-log interval = 5
+log interval = 15
 
 # Specify the printed circuit board version ( line camera / underwater camera )
-board version = line camera
+board version = underwater camera

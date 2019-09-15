@@ -91,7 +91,7 @@ dtoverlay=pi3-disable-wifi
 # Transfer speed = Xclk * 40% = 25MHz * 0.4 = 10MB/s
 # Set SDIO interface speed in MHz (internal default is 50MHz)
 # add buswidth=1 for 1-bit mode 20Mhz=2.34MB/s
-#dtoverlay=sdio,sdio_overclock=5
+dtoverlay=sdio,sdio_overclock=5
 
 # Pin for GPIO cpu shutdown, tied to SW2
 dtoverlay=gpio-shutdown,gpio_pin=18,gpio_pull=up

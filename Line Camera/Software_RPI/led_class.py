@@ -30,13 +30,13 @@ class Gpio_class():
     GPIO.setmode(GPIO.BCM)
     GPIO.setwarnings(False)
 
-    def __init__(self, pcb_type = "underwater_camera_rev_A"):
+    def __init__(self, pcb_type = "underwatercamera"):
 
-        if pcb_type == "underwater_camera_rev_A":
-            self.LED1 = 20
-            self.LED2 = 21
+        if pcb_type == "underwatercamera":
+            self.LED1 = 21
+            self.LED2 = 20
             self.SW1 = 16
-        elif pcb_type == "line_camera_rev_A":
+        elif pcb_type == "linecamera":
             self.LED1 = 10
             self.LED2 = 9
             self.MCU2 = 17
@@ -54,7 +54,7 @@ class Gpio_class():
         GPIO.setup(self.MCU1, GPIO.OUT)
         GPIO.setup(self.MCU2, GPIO.IN)
         GPIO.setup(self.SW1, GPIO.IN, pull_up_down = GPIO.PUD_UP)
-        GPIO.setup(self.SW2, GPIO.IN, pull_up_down = GPIO.PUD_UP)
+        #GPIO.setup(self.SW2, GPIO.IN, pull_up_down = GPIO.PUD_UP)
         # set initial states
         GPIO.output(self.LED1, GPIO.HIGH)
         GPIO.output(self.MCU1, GPIO.HIGH)
@@ -95,7 +95,7 @@ class Gpio_class():
     # num - number of the switch
     def checkSwitch(self, num):
         if num == 1:    return GPIO.input(self.SW1)
-        if num == 2:    return GPIO.input(self.SW2)
+        #if num == 2:    return GPIO.input(self.SW2)
         return 0
 
 # END GPIO Class

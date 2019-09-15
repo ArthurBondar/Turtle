@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 
 '''
-    August 28, 2019
+    September 7, 2019
     Line Camera Rev. A
 
     Uses raspberry Pi camera throught raspivid program
@@ -33,7 +33,7 @@ from gps_class import GPS_class     # custom gps class
 import subprocess                   # for subprocess opening
 
 # Declaration of default parameters
-SOFTWARE_V = "Sep 3, 2019"
+SOFTWARE_V = "Sep 9, 2019"
 DUR =               480             # video duration in minutes
 VIDEO_SECTION =     20              # video sections duration min
 USB_FOLDER =        "/home/pi/USB/"
@@ -146,7 +146,6 @@ io.blink(10)
 
 # Parse USB/setup.txt file and get data
 # Saving the parameters for error checking
-REC_DUR = setup_file.getParam("recording")         # get video recording duration from setupfile
 section = setup_file.getParam("sections")          # getting video sections from setupfile
 v_mode = setup_file.getParam("videomode")          # getting video parameters (width and height) according to table
 fps = setup_file.getParam("fps")                   # frames per second
@@ -186,6 +185,7 @@ if REC_DAY < 1:
 
 # Error checking each parameter from file
 # Overwriting default parameter array (PARAM)
+REC_DUR = setup_file.getParam("recording")         # get video recording duration from setupfile
 if v_mode >= 0 and v_mode < 8: PARAM[8] = str(v_mode)
 if fps > 0 and fps <= 90: PARAM[12] = str(fps)
 if rot >= 0 and rot < 360: PARAM[10] = str(rot)
